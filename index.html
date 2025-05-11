@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Loan Lending App</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <h2>Welcome to Your Dashboard</h2>
+
+    <!-- User Information -->
+    <div id="user-info">
+        <p><strong>Name:</strong> <span id="user-name"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>Account Balance:</strong> $<span id="user-balance"></span></p>
+    </div>
+
+    <!-- Loan List -->
+    <h3>Your Active Loans</h3>
+    <ul id="loan-list"></ul>
+
+    <!-- Repayment Form -->
+    <h3>Make a Repayment</h3>
+    <form id="repayment-form">
+        <input type="number" id="repay-amount" placeholder="Enter Amount" required>
+        <select id="loan-select"></select>
+        <button type="submit">Repay Loan</button>
+    </form>
+
+    <p id="repay-message" style="color: green;"></p>
+
+    <!-- Loan Application -->
+    <h3>Apply for a New Loan</h3>
+    <form id="loan-application-form">
+        <input type="number" id="loan-amount" placeholder="Loan Amount" required>
+        <input type="number" id="loan-interest" placeholder="Interest Rate (%)" required>
+        <input type="date" id="loan-due-date" required>
+        <button type="submit">Apply for Loan</button>
+    </form>
+
+    <p id="loan-message" style="color: green;"></p>
+
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
