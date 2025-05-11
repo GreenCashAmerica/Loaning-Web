@@ -3,46 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Loan Lending App</title>
-    <link rel="stylesheet" href="assets/styles.css">
+    <title>Dashboard - Loan Lending Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f9fc;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        section {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            margin-bottom: 10px;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        form input, form select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #45a049;
+        }
+
+        #loan-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #loan-list li {
+            background-color: #e8f5e9;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome to Your Dashboard</h2>
 
-    <div id="user-info">
-        <p><strong>Name:</strong> <span id="user-name"></span></p>
-        <p><strong>Email:</strong> <span id="user-email"></span></p>
-        <p><strong>Account Balance:</strong> $<span id="user-balance"></span></p>
-    </div>
+    <!-- ======= Header ======= -->
+    <header>
+        <h2>Welcome, <span id="user-name"></span></h2>
+        <p>Email: <span id="user-email"></span></p>
+        <p>Account Balance: $<span id="user-balance"></span></p>
+    </header>
 
-    <h3>Your Loans</h3>
-    <ul id="loan-list">
-        <!-- Loans will be populated here -->
-    </ul>
+    <!-- ======= Main Content ======= -->
+    <main>
+        <section id="loans-section">
+            <h3>Your Loans</h3>
+            <ul id="loan-list"></ul>
+        </section>
 
-    <script>
-        // Fetch user data from session storage
-        const userData = JSON.parse(sessionStorage.getItem("userData"));
-        if (!userData) {
-            window.location.href = "login.html"; // Redirect if not logged in
+        <!-- ======= Repayment Form ======= -->
+        <section id="repayment-section">
+            <h3>Make a Repayment</h3>
+            <form id="repayment-form">
+                <label for="loan-select">Select Loan:</label>
+                <select id="loan-select">
+                    <option value="" disabled selected>Select a Loan</option>
+                </select>
+
+                <label for="repay-amount">Repayment Amount:</label>
+                <input type="number" id="repay-amount" placeholder="Enter amount" required>
+
+                <button type="submit">Repay</button>
+                <p id="repay-message"></p>
+            </form>
+        </section>
+
+        <!-- ======= Loan Application Form ======= -->
+        <section id="loan-application-section">
+            <h3>Apply for a New Loan</h3>
+            <form id="loan-application-form">
+                <label for="loan-amount">Loan Amount:</label>
+                <input type="number" id="loan-amount" placeholder="Enter loan amount" required>
+
+                <label for="loan-interest">Interest Rate (%):</label>
+                <input type="number" id="loan-interest" placeholder="Enter interest rate" required>
+
+                <label for="loan-due-date">Due Date:</label>
+                <input type="date" id="loan-due-date" required>
+
+                <button type="submit">Apply for Loan</button>
+                <p id="loan-message"></p>
+            </form>
+        </section>
+    </main>
+
+    <!-- ======= Scripts ======= -->
+    <script type="module">
+        import { db } from "./firebaseConfig.js";
+        import { doc, updateDoc, getDoc, arrayUnion } from "firebase/firestore";
+
+        const userId = sessionStorage.getItem("userId");
+
+        if (!userId) {
+            window.location.href = "login.html";
         }
 
-        // Display User Info
-        document.getElementById("user-name").textContent = userData.name;
-        document.getElementById("user-email").textContent = userData.email;
-        document.getElementById("user-balance").textContent = userData.accountBalance;
-
-        // Display Loans
+        const userRef = doc(db, "users", userId);
         const loanList = document.getElementById("loan-list");
-        if (userData.loans && userData.loans.length > 0) {
-            userData.loans.forEach((loan) => {
+        const loanSelect = document.getElementById("loan-select");
+        const repaymentForm = document.getElementById("repayment-form");
+        const repayMessage = document.getElementById("repay-message");
+
+        async function loadUserData() {
+            const userSnapshot = await getDoc(userRef);
+            const userData = userSnapshot.data();
+
+            document.getElementById("user-name").textContent = userData.name;
+            document.getElementById("user-email").textContent = userData.email;
+            document.getElementById("user-balance").textContent = userData.accountBalance;
+
+            loanList.innerHTML = "";
+            loanSelect.innerHTML = "";
+
+            userData.loans.forEach((loan, index) => {
                 const li = document.createElement("li");
-                li.textContent = `Loan Amount: $${loan.amount}, Interest: ${loan.interest}%, Due: ${loan.dueDate}`;
+                li.textContent = `Loan Amount: $${loan.amount}, Interest: ${loan.interest}%, Due: ${loan.dueDate}, Status: ${loan.status}`;
                 loanList.appendChild(li);
+
+                if (loan.status === "active") {
+                    const option = document.createElement("option");
+                    option.value = index;
+                    option.textContent = `Loan: $${loan.amount}`;
+                    loanSelect.appendChild(option);
+                }
             });
-        } else {
-            loanList.innerHTML = "<li>No active loans</li>";
         }
+
+        loadUserData();
+
+        repaymentForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const repayAmount = parseFloat(document.getElementById("repay-amount").value);
+            const selectedLoanIndex = parseInt(loanSelect.value);
+
+            const userSnapshot = await getDoc(userRef);
+            const userData = userSnapshot.data();
+            const selectedLoan = userData.loans[selectedLoanIndex];
+
+            if (repayAmount > 0) {
+                selectedLoan.amount -= repayAmount;
+                selectedLoan.status = selectedLoan.amount <= 0 ? "paid" : "active";
+
+                await updateDoc(userRef, {
+                    loans: userData.loans,
+                    accountBalance: userData.accountBalance - repayAmount
+                });
+
+                repayMessage.textContent = "Repayment successful!";
+                loadUserData();
+                repaymentForm.reset();
+            }
+        });
     </script>
 </body>
 </html>
