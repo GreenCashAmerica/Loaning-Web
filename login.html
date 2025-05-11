@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Loan Lending App</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <h2>Login to Your Account</h2>
+
+    <div class="login-form">
+        <input type="email" id="email" placeholder="Enter Email" required>
+        <input type="password" id="password" placeholder="Enter Password" required>
+        <button onclick="loginUser()">Login</button>
+        <p id="error-message" style="color: red;"></p>
+    </div>
+
+    <script type="module">
+        import { auth, db } from "./js/firebaseConfig.js";
+        import { signInWithEmailAndPassword } from "firebase/auth";
+        import { doc, getDoc } from "firebase/firestore";
+
+        async function loginUser() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Fetch user data from Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                
+                if (userDoc.exists()) {
+                    // Store user data in session storage
+                    sessionStorage.setItem("userData", JSON.stringify(userDoc.data()));
+                    sessionStorage.setItem("userId", user.uid);
+
+                    // Redirect to dashboard
+                    window.location.href = "dashboard.html";
+                } else {
+                    errorMessage.textContent = "User data not found!";
+                }
+            } catch (error) {
+                console.error("Login Error:", error.message);
+                errorMessage.textContent = "Invalid credentials. Please try again.";
+            }
+        }
+    </script>
+</body>
+</html>
